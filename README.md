@@ -7,7 +7,7 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 ✅ **Current Features**
 - GUI interface for easy binary navigation
 - ARM64 instruction parsing and display
-- Mach-O ARM64 format support
+- Mach-O/ELF ARM64 format support
 
 🚧 **Upcoming Features**
 - VirusTotal API integration for malware analysis
