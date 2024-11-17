@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from core.binary_analyzer import analyze_binary
+
+from core.analyzer import analyze
 
 
 class DisassemblerGUI(QMainWindow):
@@ -15,6 +16,10 @@ class DisassemblerGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("ARM64 Disassembler")
         self.setGeometry(100, 100, 800, 600)
+
+        # to store binary info
+        self.binary_info = None
+        self.triage_window = None
 
         # main layout
         self.central_widget = QWidget()
@@ -30,6 +35,7 @@ class DisassemblerGUI(QMainWindow):
         # file menu for loading binaries
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu("File")
+
         open_action = self.file_menu.addAction("Open Binary")
         open_action.triggered.connect(self.open_binary)
 
@@ -42,7 +48,7 @@ class DisassemblerGUI(QMainWindow):
 
     def load_binary(self, file_path):
         # analyze the binary
-        analysis = analyze_binary(file_path)
+        analysis = analyze(file_path)
         instructions = analysis["instructions"]
 
         # populate table with instructions
@@ -52,6 +58,9 @@ class DisassemblerGUI(QMainWindow):
             self.table.setItem(row, 1, QTableWidgetItem(insn["mnemonic"]))
             self.table.setItem(row, 2, QTableWidgetItem(insn["op_str"]))
         self.table.resizeColumnsToContents()
+
+
+# TODO: class TriageWindow QWidget
 
 
 # main app

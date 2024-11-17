@@ -1,5 +1,6 @@
 from core.disassembler import disassemble
-from core.parser import extract_program_bytes
+from core.parser import parser
+from typing import Dict, Any
 
 """
 analyzes an arbitrary binary
@@ -8,13 +9,20 @@ args:
 + file_path(str): file path to binary
 
 returns:
-+ (dict): dictionary that contains all the instructions + start address (base address)
++ dict[str, Any]: 
+    - instructions: list of disassembled instructions
+    - start_address: binary's start address
 """
 
 
-def analyze_binary(file_path: str) -> dict:
-    text_data, text_start_address, endianness = extract_program_bytes(file_path)
-    if not text_data or endianness:
+def analyze(file_path: str) -> Dict[str, Any]:
+    binary_info = parser(file_path)
+
+    text_data = binary_info["content"]
+    text_start_address = binary_info["va"]
+    endianness = binary_info["endianness"]
+
+    if not (text_data or endianness or text_start_address):
         raise ValueError("Failed to extract data or endianness")
 
     instructions = disassemble(text_data, text_start_address, endianness)
