@@ -2,6 +2,8 @@
 
 A disassembler for ARM64 binaries with an intuitive GUI interface built using PyQt5. This tool helps analyze and modify ARM64 executables with features focused on binary analysis and modification.
 
+![Fibler Preview](./docs/images/preview.png)
+
 ## Features
 
 ✅ **Current Features**
