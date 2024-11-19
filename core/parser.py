@@ -31,15 +31,16 @@ def parser(binary: str) -> Dict[str, Any]:
     # MACH-O
     if isinstance(binary, lief.MachO.Binary):
         # extracting header params
-        magic = binary.header.magic
-        cpu_type = binary.header.cpu_type
-        cpu_subtype = binary.header.cpu_subtype
-        file_type = binary.header.file_type
+        magic = hex(binary.header.magic)
+        cpu_type = str(binary.header.cpu_type).split(".")[-1]
+        cpu_subtype = str(binary.header.cpu_subtype).split(".")[-1]
+        file_type = str(binary.header.file_type).split(".")[-1]
         flags_list = binary.header.flags_list
-        nb_cmds = binary.header.nb_cmds
-        sizeof_cmds = binary.header.sizeof_cmds
         reserved = binary.header.reserved
         endianness = None
+
+        # sections
+        nb_cmds = binary.header.nb_cmds
 
         # get __text
         text_section = binary.get_section("__text")
@@ -51,16 +52,16 @@ def parser(binary: str) -> Dict[str, Any]:
             endianness = "Little Endian"
 
         return {
+            "file_format": "Mach-O",
             "magic": magic,
-            "cpu_type": cpu_type,
+            "architecture": cpu_type,
             "cpu_subtype": cpu_subtype,
             "file_type": file_type,
-            "flags_list": flags_list,
-            "nb_cmds": nb_cmds,
-            "sizeof_cmds": sizeof_cmds,
-            "reserved": reserved,
+            "flags": flags_list,
+            "nb_cmds": nb_cmds,  # number of load commands
+            "reserved": reserved,  # reserved value
             "content": bytes(text_section.content),
-            "va": text_section.virtual_address,
+            "text_section_start": text_section.virtual_address,
             "endianness": endianness,
         }
 
@@ -78,13 +79,18 @@ def parser(binary: str) -> Dict[str, Any]:
             raise ValueError(f"Unkmown endianness in {binary}")
 
         # extracting header params
-        magic = int.from_bytes((binary.header.identity[:4]), byteorder=byteorder)
-        machine_type = binary.header.machine_type
-        file_type = binary.header.file_type
-        flags = binary.header.processor_flag
+        magic = hex(int.from_bytes((binary.header.identity[:4]), byteorder=byteorder))
+        machine_type = str(binary.header.machine_type).split(".")[-1]
+        file_type = str(binary.header.file_type).split(".")[-1]
         flags_list = binary.header.flags_list
+
+        # sections/segments
         nb_sections = binary.header.numberof_sections
-        section_header_size = binary.header.section_header_size
+        nb_segments = binary.header.numberof_segments
+        program_header_offset = binary.header.program_header_offset  # segments table
+
+        # binary entrypoint
+        entrypoint = binary.header.entrypoint
 
         # get .text section
         text_section = binary.get_section(".text")
@@ -101,15 +107,16 @@ def parser(binary: str) -> Dict[str, Any]:
             raise ValueError("Couldn't get endianness")
 
         return {
-            "magic": hex(magic),
-            "cpu_type": machine_type,
-            "cpu_subtype": 0,  # elf doesn't have direct cpu subtype
-            "file_type": file_type,
-            "flags_list": flags_list,
-            "nb_cmds": nb_sections,
-            "sizeof_cmds": section_header_size,
-            "reserved": 0,  # elf doesn't have this field
+            "file_format": "ELF",
+            "magic": magic,
+            "architecture": machine_type,  # architecture
+            "file_type": file_type,  # executable, library...
+            "flags": flags_list,  # processor flags
+            "program_header_offset": program_header_offset,
+            "nb_sections": nb_sections,  # nunber of sections
+            "nb_segments": nb_segments,  # number of segments
             "content": bytes(text_section.content),
-            "va": text_section.virtual_address,
+            "text_section_start": text_section.virtual_address,
+            "entrypoint": entrypoint,
             "endianness": endianness,
         }

@@ -1,4 +1,4 @@
-# ARM64 Disassembler
+# Fibler - ARM64 Disassembler
 
 A disassembler for ARM64 binaries with an intuitive GUI interface built using PyQt5. This tool helps analyze and modify ARM64 executables with features focused on binary analysis and modification.
 
@@ -10,6 +10,7 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 - Mach-O/ELF ARM64 format support
 
 🚧 **Upcoming Features**
+- CLI flag (-fe) to search for exports effortlessly
 - VirusTotal API integration for malware analysis
 - Virtual address instruction lookup
 - Binary modification and rebuilding capabilities
