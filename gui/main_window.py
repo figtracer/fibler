@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QFrame,
     QHeaderView,
+    QDesktopWidget,
 )
 
 from PyQt5.QtGui import QPixmap, QFont, QFontDatabase
@@ -22,7 +23,9 @@ class DisassemblerGUI(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Fibler - ARM64 Disassembler")
-        self.setGeometry(100, 100, 1200, 800)
+
+        screen = QDesktopWidget().screenGeometry()
+        self.setGeometry(0, 0, screen.width(), screen.height())
 
         # to store binary info, preventing another parse
         self.binary_info = None
@@ -38,9 +41,6 @@ class DisassemblerGUI(QMainWindow):
         QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Regular.ttf")
         QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Medium.ttf")
         QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Bold.ttf")
-
-        default_font = QFont("IosevkaTermNerdFont-Regular", 12)
-        QApplication.setFont(default_font)
 
         # set theme
         self.setStyleSheet(
