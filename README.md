@@ -21,12 +21,6 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 - Read-only table values with controlled modification through context menu
 - and more...
 
-## Requirements
-
-- lief
-- capstone
-- PyQt5
-
 ## Installation
 
 1. Clone the repository
@@ -42,9 +36,9 @@ pip install -r requirements.txt
 
 ## Usage
 
-> Create a .env file with: VT_API_KEY=your_api_key_here
+1. Create a .env file with: VT_API_KEY=your_api_key_here (500 free lookups per day)
 
-Run the main application:
+2. Run the main application:
 ```bash
 python fibler.py
 ```
