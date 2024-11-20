@@ -1,55 +1,71 @@
 from capstone import *
-from typing import List
+from typing import List, Dict, Any
 
 
-# dissassemble() bytes
-def disassemble(bytes: bytes, start_address: int, endianness: str) -> List:
-    if endianness == "Little Endian":
-        return disassemble_arm64_little(bytes, start_address)
-    elif endianness == "Big Endian":
-        return disassemble_arm64_big(bytes, start_address)
+class Disassembler:
+    def __init__(self):
+        self.little_endian_disassembler = None
+        self.big_endian_disassembler = None
 
+    def disassemble(
+        self, bytes: bytes, start_address: int, endianness: str
+    ) -> List[Dict[str, Any]]:
+        """
+        disassembles binary content into instructions.
 
-"""
-disassembles arm64 little/big endian binary
-...i wonder who will disassemble a big endian binary nowadays
+        args:
+            + bytes (bytes): raw binary content to disassemble
+            + start_address (int): starting address for disassembly
+            + endianness (str): "Little Endian" or "Big Endian"
 
-args:
-+ binary(bytes): the raw bytes to disassemble
-+ start_address(int): the starting address 
+        returns:
+            + list of dictionaries containing:
+                - address: instruction address
+                - mnemonic: instruction mnemonic
+                - op_str: operand string
+        """
+        if endianness == "Little Endian":
+            return self.disassemble_little_endian(bytes, start_address)
+        elif endianness == "Big Endian":
+            return self.disassemble_big_endian(bytes, start_address)
 
-returns:
-+ instructions(list): a list of disassembled instructions
-"""
+    def disassemble_little_endian(
+        self, bytes: bytes, start_address: int
+    ) -> List[Dict[str, Any]]:
+        md = self._get_little_endian_settings()
+        return self._process_instructions(md.disasm(bytes, start_address))
 
+    def disassemble_big_endian(
+        self, bytes: bytes, start_address: int
+    ) -> List[Dict[str, Any]]:
+        md = self._get_big_endian_settings()
+        return self._process_instructions(md.disasm(bytes, start_address))
 
-def disassemble_arm64_little(bytes: bytes, start_address: int) -> List:
-    md = Cs(CS_ARCH_ARM64, CS_MODE_ARM + CS_MODE_LITTLE_ENDIAN)
-    instructions = []
+    def _get_little_endian_settings(self):
+        if not self.little_endian_disassembler:
+            self.little_endian_disassembler = Cs(
+                CS_ARCH_ARM64, CS_MODE_ARM + CS_MODE_LITTLE_ENDIAN
+            )
+        return self.little_endian_disassembler
 
-    for instruction in md.disasm(bytes, start_address):
-        instructions.append(
-            {
-                "address": instruction.address,
-                "mnemonic": instruction.mnemonic,
-                "op_str": instruction.op_str,
-            }
-        )
+    def _get_big_endian_settings(self):
+        if not self.big_endian_disassembler:
+            self.big_endian_disassembler = Cs(
+                CS_ARCH_ARM64, CS_MODE_ARM + CS_MODE_BIG_ENDIAN
+            )
+        return self.big_endian_disassembler
 
-    return instructions
+    @staticmethod
+    def _process_instructions(disasm_result) -> List[Dict[str, Any]]:
+        instructions = []
 
+        for instruction in disasm_result:
+            instructions.append(
+                {
+                    "address": instruction.address,
+                    "mnemonic": instruction.mnemonic,
+                    "op_str": instruction.op_str,
+                }
+            )
 
-def disassemble_arm64_big(bytes: bytes, start_address: int) -> List:
-    md = Cs(CS_ARCH_ARM64, CS_MODE_ARM + CS_MODE_BIG_ENDIAN)
-    instructions = []
-
-    for instruction in md.disasm(bytes, start_address):
-        instructions.append(
-            {
-                "address": instruction.address,
-                "mnemonic": instruction.mnemonic,
-                "op_str": instruction.op_str,
-            }
-        )
-
-    return instructions
+        return instructions

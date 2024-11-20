@@ -15,34 +15,75 @@ from PyQt5.QtWidgets import (
 
 from PyQt5.QtGui import QPixmap, QFont, QFontDatabase
 from PyQt5.QtCore import Qt
-from core.analyzer import analyze
+from core.analyzer import Analyzer
 
 
 class DisassemblerGUI(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.binary_info = None
 
+        self._setup_window()
+        self._setup_fonts()
+        self._setup_style_sheet()
+        self._setup_left_side()
+        self._setup_file_menu()
+
+    def _setup_fonts(self):
+        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Regular.ttf")
+        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Medium.ttf")
+        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Bold.ttf")
+
+    def _setup_left_side(self):
+        self.splitter = QSplitter(Qt.Horizontal)
+
+        # left widget
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
+        # assign the container to the left side layout
+        self.table = QTableWidget()
+        table_font = QFont("IosevkaTerm Nerd Font", 13)
+        self.table.setFont(table_font)
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Address", "Mnemonic", "Operands"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setFrameStyle(0)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        # prevent resizing
+        for i in range(0, 3):
+            self.table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
+
+        # add table to left side of the layout
+        left_layout.addWidget(self.table)
+
+        # add left side widget to the splitter
+        self.splitter.addWidget(left_widget)
+
+        self.triage_window = TriageWindow()
+        self.splitter.addWidget(self.triage_window)
+
+        # set splitter ratio
+        self.splitter.setSizes([560, 240])
+
+        # add splitter to main layout
+        self.main_layout.addWidget(self.splitter)
+
+    def _setup_window(self):
         self.setWindowTitle("Fibler - ARM64 Disassembler")
-
         screen = QDesktopWidget().screenGeometry()
         self.setGeometry(0, 0, screen.width(), screen.height())
-
-        # to store binary info, preventing another parse
-        self.binary_info = None
 
         # main widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # layout
-        layout = QVBoxLayout(central_widget)
+        self.main_layout = QVBoxLayout(central_widget)
 
-        # add fonts to use in layout
-        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Regular.ttf")
-        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Medium.ttf")
-        QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Bold.ttf")
-
-        # set theme
+    def _setup_style_sheet(self):
         self.setStyleSheet(
             """
             QMainWindow {
@@ -143,54 +184,18 @@ class DisassemblerGUI(QMainWindow):
         """
         )
 
-        # create splitter
-        splitter = QSplitter(Qt.Horizontal)
-
-        # <--- LEFT SIDE ---
-        # create widget (container) for the left side of the splitter + layout
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-
-        # assign the container to the left side layout
-        self.table = QTableWidget()
-        table_font = QFont("IosevkaTerm Nerd Font", 13)
-        self.table.setFont(table_font)
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Address", "Mnemonic", "Operands"])
-        self.table.verticalHeader().setVisible(False)
-        self.table.setFrameStyle(0)
-        self.table.horizontalHeader().setStretchLastSection(True)
-
-        # prevent resizing
-        for i in range(0, 3):
-            self.table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
-
-        # prevent direct editing
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-
-        # add table to left side of the layout
-        left_layout.addWidget(self.table)
-
-        # add left side widget to the splitter
-        splitter.addWidget(left_widget)
-
-        # --- RIGHT SIZE --->
-        # create triage window and add it to the splitter (right size)
-        self.triage_window = TriageWindow()
-        splitter.addWidget(self.triage_window)
-
-        # set ratio
-        splitter.setSizes([560, 240])
-
-        # add splitter container to main layout
-        layout.addWidget(splitter)
-
-        # file menu for loading binaries
+    def _setup_file_menu(self):
         menu = self.menuBar()
         file_menu = menu.addMenu("File")
         open_action = file_menu.addAction("Open Binary")
         open_action.triggered.connect(self.open_binary)
+
+    def _populate_table(self, instructions: list):
+        self.table.setRowCount(len(instructions))
+        for row, insn in enumerate(instructions):
+            self.table.setItem(row, 0, QTableWidgetItem(f"{insn['address']:08x}"))
+            self.table.setItem(row, 1, QTableWidgetItem(insn["mnemonic"]))
+            self.table.setItem(row, 2, QTableWidgetItem(insn["op_str"]))
 
     def open_binary(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -201,64 +206,54 @@ class DisassemblerGUI(QMainWindow):
 
     def load_binary(self, file_path):
         # analyze the binary
-        self.binary_info = analyze(file_path)
+        analyzer = Analyzer(file_path)
+        self.binary_info = analyzer.analyze()
+
+        # get instructions
         instructions = self.binary_info["instructions"]
 
-        # populate table with instructions
-        self.table.setRowCount(len(instructions))
-        for row, insn in enumerate(instructions):
-            self.table.setItem(row, 0, QTableWidgetItem(f"{insn['address']:08x}"))
-            self.table.setItem(row, 1, QTableWidgetItem(insn["mnemonic"]))
-            self.table.setItem(row, 2, QTableWidgetItem(insn["op_str"]))
+        # populate table
+        self._populate_table(instructions)
 
-        # update file format value
+        # update table info
         self.triage_window.update_info(
             "File Format", self.binary_info["binary_info"]["file_format"]
         )
 
-        # update magic value
         self.triage_window.update_info(
             "Magic", self.binary_info["binary_info"]["magic"]
         )
 
-        # update architecture value
         self.triage_window.update_info(
             "Architecture", self.binary_info["binary_info"]["architecture"]
         )
 
-        # update file type value
         self.triage_window.update_info(
             "Type", self.binary_info["binary_info"]["file_type"]
         )
 
-        # update flags info
         flags = " | ".join(
             str(flag).split(".")[-1]
             for flag in self.binary_info["binary_info"]["flags"]
         )
-
         if flags:
             self.triage_window.update_info("Flags", flags)
         else:
             self.triage_window.update_info("Flags", "none")
 
-        # update text section start address value
         self.triage_window.update_info(
             "Text Section Start",
             hex(self.binary_info["binary_info"]["text_section_start"]),
         )
 
-        # update endianness value
         self.triage_window.update_info(
             "Endianness", self.binary_info["binary_info"]["endianness"]
         )
 
-        # update total av reports
         self.triage_window.update_info(
             "Total AV Reports", self.binary_info["binary_info"]["total"]
         )
 
-        # update positive av reports
         self.triage_window.update_info(
             "Positive AV Reports", self.binary_info["binary_info"]["positives"]
         )
@@ -269,22 +264,22 @@ class TriageWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        image_label = QLabel()
+        self._setup_image()
+        self._setup_layout()
+        self._setup_labels()
+
+    def _setup_image(self):
+        self.image_label = QLabel()
         pixmap = QPixmap("./gui/images/logo.png")
         scaled_pixmap = pixmap.scaled(
             300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
-        image_label.setPixmap(scaled_pixmap)
-        image_label.setAlignment(Qt.AlignCenter)
-        image_label.setAttribute(Qt.WA_TranslucentBackground)
-        image_label.setObjectName("image_label")
+        self.image_label.setPixmap(scaled_pixmap)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setAttribute(Qt.WA_TranslucentBackground)
+        self.image_label.setObjectName("image_label")
 
-        # layout settings
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(20, 0, 20, 20)
-        self.layout.setSpacing(0)
-
-        # set style sheet for the all labels
+    def _setup_style_sheet(self):
         self.setStyleSheet(
             """
             QWidget { 
@@ -320,6 +315,11 @@ class TriageWindow(QWidget):
         """
         )
 
+    def _setup_layout(self):
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(20, 0, 20, 20)
+        self.layout.setSpacing(0)
+
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
@@ -331,16 +331,15 @@ class TriageWindow(QWidget):
         triage_title.setAlignment(Qt.AlignLeft)
 
         # add widgets to layout
-        self.layout.addWidget(image_label)
+        self.layout.addWidget(self.image_label)
         self.layout.addWidget(triage_title)
         self.layout.addWidget(line)
 
-        # labels
+    def _setup_labels(self):
         self.labels = {}
         self.add_common_labels()
 
-    """ populates self.labels with all the common labels for mach-o and elf """
-
+    # populates self.labels with all the common labels for mach-o and elf
     def add_common_labels(self):
         default_labels = [
             "File Format",
@@ -356,8 +355,7 @@ class TriageWindow(QWidget):
         for field in default_labels:
             self.add_label(field)
 
-    """ populates self.labels with an arbitrary label name """
-
+    # populates self.labels with an arbitrary label name
     def add_label(self, field_name: str):
         label = QLabel(f"{field_name}: ")
         label.setFixedHeight(29)
@@ -365,8 +363,7 @@ class TriageWindow(QWidget):
         self.labels[field_name] = label
         self.layout.addWidget(label)
 
-    """ updates self.labels information """
-
+    # updates self.labels information
     def update_info(self, field_name: str, value: str):
         if field_name in self.labels:
             text = f'<span style="color: #808080;">{field_name}:</span> <span style="color: #E0E0E0;">{value}</span>'

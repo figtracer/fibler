@@ -2,54 +2,68 @@ import lief
 from typing import Dict, Any
 from core.vt import VirusTotalScanner
 
-"""
-extracts binary information including header parms, text section and endianness
-Currently supports Mach-O and ELF file formats
 
-args:
-+ binary_path(str): path to binary file
+class Parser:
+    def __init__(self):
+        self.scanner = VirusTotalScanner()
 
-returns:
-+ dict[str, Any]: 
-    - magic: magic number
-    - cpu_type: CPU architecture    
-    - cpu_subtype: CPU subtype
-    - file_type: type of the file
-    - flags_list: binary flags
-    - nb_cmds: number of commands (Mach-O) or number of sections (ELF)
-    - sizeof_cmds: size of commands (Mach-O) or size of section headers (ELF)
-    - reserved: reserved bytes (Mach-O only)
-    - content: text section content
-    - va: virtual address
-    - endianness: binary endianness
-"""
+    def parse(self, binary_path: str) -> Dict[str, Any]:
+        """
+        parses a binary file and extracts its metadata.
 
+        args:
+            + binary_path (str): Path to the binary file
 
-def parser(binary_path: str) -> Dict[str, Any]:
-    binary = lief.parse(binary_path)
-    scanner = VirusTotalScanner()
-    total, positives = scanner.get_av_reports(binary_path)
+        returns:
+            + Dict containing binary metadata including:
+                - file format, magic, architecture, flags
+                - section information and contents
+                - endianness and other format-specific data
 
-    # MACH-O
-    if isinstance(binary, lief.MachO.Binary):
-        # extracting header params
+        raises:
+            ValueError: if file format is unsupported
+        """
+        binary = lief.parse(binary_path)
+
+        if isinstance(binary, lief.MachO.Binary):
+            return self._parse_macho(binary, binary_path)
+        elif isinstance(binary, lief.ELF.Binary):
+            return self._parse_elf(binary, binary_path)
+        else:
+            raise ValueError("Unsupported file format")
+
+    def _parse_macho(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
+        """
+        parses a Mach-O binary format file.
+
+        args:
+            + binary (lief.Binary): LIEF Binary object
+            + binary_path (str): Path to the binary file
+
+        returns:
+            + Dict containing Mach-O specific information:
+                - magic number, CPU type/subtype
+                - flags, commands, sections
+                - endianness and file type
+                - VirusTotal scan results
+
+        raises:
+            ValueError: if __text section is missing
+        """
         magic = hex(binary.header.magic)
         cpu_type = str(binary.header.cpu_type).split(".")[-1]
         cpu_subtype = str(binary.header.cpu_subtype).split(".")[-1]
         file_type = str(binary.header.file_type).split(".")[-1]
         flags_list = binary.header.flags_list
         reserved = binary.header.reserved
-        endianness = None
-
-        # sections
         nb_cmds = binary.header.nb_cmds
+        endianness = None
+        total, positives = self.scanner.get_av_reports(binary_path)
 
-        # get __text
         text_section = binary.get_section("__text")
         if not text_section:
             raise ValueError(f"{binary} does not contain a __text section")
 
-        # check endianness (mach-o arm64 binaries are always little endian)
         if binary.header.cpu_type == lief.MachO.Header.CPU_TYPE.ARM64:
             endianness = "Little Endian"
 
@@ -69,9 +83,26 @@ def parser(binary_path: str) -> Dict[str, Any]:
             "positives": positives,
         }
 
-    # ELF
-    if isinstance(binary, lief.ELF.Binary):
-        # check endianness first to read 'magic' correctly
+    def _parse_elf(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
+        """
+        parses an ELF binary format file.
+
+        args:
+            + binary (lief.Binary): LIEF Binary object
+            + binary_path (str): path to the binary file
+
+        returns:
+            + Dict containing ELF specific information:
+                - magic number
+                - flags, sections, segments
+                - endianness and file type
+                - entrypoint, program_header_offset
+                - VirusTotal scan results
+
+        raises:
+            ValueError: if __text section is missing
+        """
+        # check endianness first to read magic correctly
         get_endianness = binary.header.identity_data
         if get_endianness == lief.ELF.Header.ELF_DATA.LSB:
             endianness = "Little Endian"
@@ -82,26 +113,20 @@ def parser(binary_path: str) -> Dict[str, Any]:
         else:
             raise ValueError(f"Unkmown endianness in {binary}")
 
-        # extracting header params
         magic = hex(int.from_bytes((binary.header.identity[:4]), byteorder=byteorder))
         machine_type = str(binary.header.machine_type).split(".")[-1]
         file_type = str(binary.header.file_type).split(".")[-1]
         flags_list = binary.header.flags_list
-
-        # sections/segments
         nb_sections = binary.header.numberof_sections
         nb_segments = binary.header.numberof_segments
         program_header_offset = binary.header.program_header_offset  # segments table
-
-        # binary entrypoint
         entrypoint = binary.header.entrypoint
+        total, positives = self.scanner.get_av_reports(binary_path)
 
-        # get .text section
         text_section = binary.get_section(".text")
         if not text_section:
             raise ValueError(f"{binary} does not contain a .text section")
 
-        # check endianness
         get_endianness = binary.header.identity_data
         if get_endianness == lief.ELF.Header.ELF_DATA.LSB:
             endianness = "Little Endian"

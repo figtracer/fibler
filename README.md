@@ -49,12 +49,22 @@ python fibler.py
 ├── core/
 │   ├── binary_analyzer.py
 │   ├── disassembler.py
-│   └── parser.py
+│   ├── parser.py
 │   └── vt.py
+├── docs/
+│   └── images/
+│       └── preview.png
 ├── gui/
+│   ├── fonts/
+│   │   ├── IosevkaTermNerdFont-Bold
+│   │   ├── IosevkaTermNerdFont-Medium
+│   │   └── IosevkaTermNerdFont-Regular
+│   ├── images/
+│   │   └── logo.png
 │   └── main_window.py
+├── fibler.py
+├── README.md
 └── requirements.txt
-└── fibler.py
 ```
 
 ## Contributing
