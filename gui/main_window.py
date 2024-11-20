@@ -254,6 +254,16 @@ class DisassemblerGUI(QMainWindow):
             "Endianness", self.binary_info["binary_info"]["endianness"]
         )
 
+        # update total av reports
+        self.triage_window.update_info(
+            "Total AV Reports", self.binary_info["binary_info"]["total"]
+        )
+
+        # update positive av reports
+        self.triage_window.update_info(
+            "Positive AV Reports", self.binary_info["binary_info"]["positives"]
+        )
+
 
 # --- RIGHT --->
 class TriageWindow(QWidget):
@@ -341,6 +351,8 @@ class TriageWindow(QWidget):
             "Flags",
             "Text Section Start",
             "Endianness",
+            "Total AV Reports",
+            "Positive AV Reports",
         ]
         for field in default_labels:
             self.add_label(field)

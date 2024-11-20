@@ -1,13 +1,13 @@
 import lief
 from typing import Dict, Any
-
+from core.vt import getAVReports
 
 """
 extracts binary information including header parms, text section and endianness
 Currently supports Mach-O and ELF file formats
 
 args:
-+ binary(str): path to binary file
++ binary_path(str): path to binary file
 
 returns:
 + dict[str, Any]: 
@@ -25,8 +25,9 @@ returns:
 """
 
 
-def parser(binary: str) -> Dict[str, Any]:
-    binary = lief.parse(binary)
+def parser(binary_path: str) -> Dict[str, Any]:
+    binary = lief.parse(binary_path)
+    total, positives = getAVReports(binary)
 
     # MACH-O
     if isinstance(binary, lief.MachO.Binary):
@@ -63,6 +64,8 @@ def parser(binary: str) -> Dict[str, Any]:
             "content": bytes(text_section.content),
             "text_section_start": text_section.virtual_address,
             "endianness": endianness,
+            "total": total,
+            "positives": positives,
         }
 
     # ELF
@@ -119,4 +122,6 @@ def parser(binary: str) -> Dict[str, Any]:
             "text_section_start": text_section.virtual_address,
             "entrypoint": entrypoint,
             "endianness": endianness,
+            "total": total,
+            "positives": positives,
         }
