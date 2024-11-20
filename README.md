@@ -31,8 +31,8 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 
 1. Clone the repository
 ```bash
-git clone https://gitlab.com/figtools/disassembler.git
-cd disassembler
+git clone https://gitlab.com/figtools/fibler.git
+cd fibler
 ```
 
 2. Install dependencies
