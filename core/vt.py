@@ -44,13 +44,13 @@ class VirusTotalScanner:
 
             return total, positives
 
-        except Exception as e:
-            raise Exception(f"Error getting AV reports: {str(e)}")
+        except Exception:
+            return 0, 0
 
 
 @staticmethod
 def getAVReports(binary_path: str) -> Tuple:
-    API_KEY = "YOUR-API-KEY-HERE"
+    API_KEY = ""
     scanner = VirusTotalScanner(API_KEY)
     total, positives = scanner.get_av_reports(binary_path)
     return total, positives

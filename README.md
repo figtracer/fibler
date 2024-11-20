@@ -42,9 +42,11 @@ pip install -r requirements.txt
 
 ## Usage
 
+> Add your VIRUSTOTAL API Key (free 500 lookups/day) at vt.py
+
 Run the main application:
 ```bash
-python main.py
+python fibler.py
 ```
 
 ## Project Structure
@@ -54,9 +56,11 @@ python main.py
 │   ├── binary_analyzer.py
 │   ├── disassembler.py
 │   └── parser.py
+│   └── vt.py
 ├── gui/
 │   └── main_window.py
 └── requirements.txt
+└── fibler.py
 ```
 
 ## Contributing

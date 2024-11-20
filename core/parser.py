@@ -27,7 +27,7 @@ returns:
 
 def parser(binary_path: str) -> Dict[str, Any]:
     binary = lief.parse(binary_path)
-    total, positives = getAVReports(binary)
+    total, positives = getAVReports(binary_path)
 
     # MACH-O
     if isinstance(binary, lief.MachO.Binary):
