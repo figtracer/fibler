@@ -42,7 +42,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-> Add your VIRUSTOTAL API Key (free 500 lookups/day) at vt.py
+> Create a .env file with: VT_API_KEY=your_api_key_here
 
 Run the main application:
 ```bash

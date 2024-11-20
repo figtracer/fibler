@@ -1,13 +1,17 @@
+import os
 import requests
 from hashlib import sha256
 from typing import Tuple
+from dotenv import load_dotenv
 
-API_KEY = "bb8de54a69048b6a88349f0c41ecd4fe6fbf509525dbd79b7b98e1b69a0e00fc"
+load_dotenv()
 
 
 class VirusTotalScanner:
     def __init__(self):
-        self.api_key = API_KEY
+        self.api_key = os.getenv("VT_API_KEY")
+        if not self.api_key:
+            print(f"VT_API_KEY environment variable not set")
         self.base_url = "https://www.virustotal.com/api/v3"
 
     def get_av_reports(self, binary_path: str) -> Tuple[int, int]:
