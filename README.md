@@ -10,10 +10,10 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 - GUI interface for easy binary navigation
 - ARM64 instruction parsing and display
 - Mach-O/ELF ARM64 format support
+- VirusTotal API integration (AV reports)
 
 🚧 **Upcoming Features**
 - CLI flag (-fe) to search for exports effortlessly
-- VirusTotal API integration for malware analysis
 - Virtual address instruction lookup
 - Binary modification and rebuilding capabilities
 - Instruction modification through context menu

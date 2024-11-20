@@ -1,3 +1,4 @@
 lief
 capstone
 PyQt5
+virustotal-api
