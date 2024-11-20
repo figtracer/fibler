@@ -266,6 +266,7 @@ class TriageWindow(QWidget):
 
         self._setup_image()
         self._setup_layout()
+        self._setup_style_sheet()
         self._setup_labels()
 
     def _setup_image(self):
