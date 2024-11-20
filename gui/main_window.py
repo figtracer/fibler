@@ -163,9 +163,8 @@ class DisassemblerGUI(QMainWindow):
         self.table.horizontalHeader().setStretchLastSection(True)
 
         # prevent resizing
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
+        for i in range(0, 3):
+            self.table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
 
         # prevent direct editing
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)

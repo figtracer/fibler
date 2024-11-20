@@ -2,10 +2,12 @@ import requests
 from hashlib import sha256
 from typing import Tuple
 
+API_KEY = "bb8de54a69048b6a88349f0c41ecd4fe6fbf509525dbd79b7b98e1b69a0e00fc"
+
 
 class VirusTotalScanner:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
+    def __init__(self):
+        self.api_key = API_KEY
         self.base_url = "https://www.virustotal.com/api/v3"
 
     def get_av_reports(self, binary_path: str) -> Tuple[int, int]:
@@ -46,11 +48,3 @@ class VirusTotalScanner:
 
         except Exception:
             return 0, 0
-
-
-@staticmethod
-def getAVReports(binary_path: str) -> Tuple:
-    API_KEY = ""
-    scanner = VirusTotalScanner(API_KEY)
-    total, positives = scanner.get_av_reports(binary_path)
-    return total, positives

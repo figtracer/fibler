@@ -1,6 +1,6 @@
 import lief
 from typing import Dict, Any
-from core.vt import getAVReports
+from core.vt import VirusTotalScanner
 
 """
 extracts binary information including header parms, text section and endianness
@@ -27,7 +27,8 @@ returns:
 
 def parser(binary_path: str) -> Dict[str, Any]:
     binary = lief.parse(binary_path)
-    total, positives = getAVReports(binary_path)
+    scanner = VirusTotalScanner()
+    total, positives = scanner.get_av_reports(binary_path)
 
     # MACH-O
     if isinstance(binary, lief.MachO.Binary):
