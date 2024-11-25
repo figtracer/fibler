@@ -1,12 +1,16 @@
 from PyQt5.QtWidgets import QApplication
-from gui.main_window import DisassemblerGUI
+from PyQt5.QtGui import QFontDatabase
+from gui.main_window import WelcomeWindow
 import sys
 
 
 def main():
     app = QApplication(sys.argv)
-    gui = DisassemblerGUI()
-    gui.show()
+    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Regular.ttf")
+    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Medium.ttf")
+    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Bold.ttf")
+    welcome = WelcomeWindow()
+    welcome.show()
     sys.exit(app.exec())
 
 

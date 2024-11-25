@@ -52,11 +52,12 @@ class Parser:
         """
         magic = hex(binary.header.magic)
         cpu_type = str(binary.header.cpu_type).split(".")[-1]
-        cpu_subtype = str(binary.header.cpu_subtype).split(".")[-1]
         file_type = str(binary.header.file_type).split(".")[-1]
         flags_list = binary.header.flags_list
         reserved = binary.header.reserved
         nb_cmds = binary.header.nb_cmds
+        libraries = binary.libraries
+
         endianness = None
         total, positives = self.scanner.get_av_reports(binary_path)
 
@@ -71,7 +72,6 @@ class Parser:
             "file_format": "Mach-O",
             "magic": magic,
             "architecture": cpu_type,
-            "cpu_subtype": cpu_subtype,
             "file_type": file_type,
             "flags": flags_list,
             "nb_cmds": nb_cmds,  # number of load commands
@@ -81,6 +81,7 @@ class Parser:
             "endianness": endianness,
             "total": total,
             "positives": positives,
+            "libraries": libraries,
         }
 
     def _parse_elf(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
@@ -122,8 +123,8 @@ class Parser:
         program_header_offset = binary.header.program_header_offset  # segments table
         entrypoint = binary.header.entrypoint
         total, positives = self.scanner.get_av_reports(binary_path)
-
         text_section = binary.get_section(".text")
+
         if not text_section:
             raise ValueError(f"{binary} does not contain a .text section")
 
@@ -134,6 +135,11 @@ class Parser:
             endianness = "Big Endian"
         else:
             raise ValueError("Couldn't get endianness")
+
+        libraries = []
+        for entry in binary.dynamic_entries:
+            if isinstance(entry, lief.ELF.DynamicEntryLibrary):
+                libraries.append(str(entry.name))
 
         return {
             "file_format": "ELF",
@@ -150,4 +156,5 @@ class Parser:
             "endianness": endianness,
             "total": total,
             "positives": positives,
+            "libraries": libraries,
         }
