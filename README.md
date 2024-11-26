@@ -6,17 +6,15 @@ A disassembler for ARM64 binaries with an intuitive GUI interface built using Py
 
 ✅ **Current Features**
 - GUI interface for easy binary navigation
-- ARM64 instruction parsing and display
 - Mach-O/ELF ARM64 format support
 - VirusTotal API integration (AV reports)
+- Comment system for annotations
 
 🚧 **Upcoming Features**
 - CLI flag (-fe) to search for exports effortlessly
 - Virtual address instruction lookup
 - Binary modification and rebuilding capabilities
 - Instruction modification through context menu
-- Comment system for annotations
-- Read-only table values with controlled modification through context menu
 - and more...
 
 ## Installation
@@ -33,10 +31,12 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+1. Create an account on VirusTotal and get your API Key (free 500 lookups/day).
 
-1. Create a .env file with: VT_API_KEY=your_api_key_here (500 free lookups per day)
+2. Create a .env file inside the project directory with your API Key: ```echo "VT_API_KEY=your_api_key_here" > .env```
+    > Yes, there're better ways to handle the API key but, since it's free, I will change it in the future.
 
-2. Run the main application:
+3. Run the main application:
 ```bash
 python fibler.py
 ```
@@ -45,25 +45,49 @@ python fibler.py
 
 ```
 ├── core/
-│   ├── binary_analyzer.py
+│   ├── formatters/
+│   │   └── impexp.py
+│   ├── analyzer.py
 │   ├── disassembler.py
 │   ├── parser.py
 │   └── vt.py
-├── docs/
-│   └── images/
-│       └── preview.png
+│
 ├── gui/
 │   ├── fonts/
 │   │   ├── IosevkaTermNerdFont-Bold
 │   │   ├── IosevkaTermNerdFont-Medium
 │   │   └── IosevkaTermNerdFont-Regular
-│   ├── images/
-│   │   └── logo.png
-│   └── main_window.py
+│   ├── styles/
+│   │   └── default.py
+│   ├── widgets/
+│   │   ├── exports.py
+│   │   ├── imports.py
+│   │   ├── libraries.py
+│   │   └── triage.py
+│   └── windows/
+│       ├── main.py
+│       └── welcome.py
+│
 ├── fibler.py
 ├── README.md
 └── requirements.txt
 ```
+
+## Memory Management
+
+When running the application, you may notice nanobind reporting leaked instances of LIEF's type system:
+```
+nanobind: leaked X instances!
+ - leaked instance of type "lief._lief.VA_TYPES"
+ - leaked instance of type "lief._lief.FORMATS"
+```
+
+These messages are **expected behavior** and can be safely ignored. They represent LIEF's static type system initialization, which:
+- Are one-time allocations that don't grow with usage
+- Get automatically cleaned up when Python exits
+- Are required for Python-C++ interoperability
+
+These are not memory leaks in your binary analysis workflow and won't affect the application's performance or memory usage over time.
 
 ## Contributing
 

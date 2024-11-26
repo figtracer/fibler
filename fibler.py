@@ -1,15 +1,11 @@
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QFontDatabase
-from gui.main_window import WelcomeWindow
+from gui.windows.welcome import Welcome
 import sys
 
 
 def main():
     app = QApplication(sys.argv)
-    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Regular.ttf")
-    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Medium.ttf")
-    QFontDatabase.addApplicationFont("./fonts/IosevkaTermNerdFont-Bold.ttf")
-    welcome = WelcomeWindow()
+    welcome = Welcome()
     welcome.show()
     sys.exit(app.exec())
 

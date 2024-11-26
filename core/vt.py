@@ -15,15 +15,6 @@ class VirusTotalScanner:
         self.base_url = "https://www.virustotal.com/api/v3"
 
     def get_av_reports(self, binary_path: str) -> Tuple[int, int]:
-        """
-        get antivirus scan reports from VirusTotal for a given binary file.
-
-        args:
-        + binary_path: path to the binary file to scan
-
-        returns:
-        + tuple containing (total_scans, positive_detections)
-        """
         try:
             with open(binary_path, "rb") as binary:
                 file_content = binary.read()

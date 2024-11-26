@@ -1,6 +1,7 @@
 from core.disassembler import Disassembler
 from core.parser import Parser
 from typing import Dict, Any
+import gc
 
 
 class Analyzer:
@@ -10,19 +11,17 @@ class Analyzer:
         self.parser = Parser()
         self.disassembler = Disassembler()
 
+    def __del__(self):
+        try:
+            if hasattr(self, "binary_info"):
+                self.binary_info = None
+            self.binary_info = None
+            if hasattr(self, "parser"):
+                self.parser = None
+        except:
+            pass
+
     def analyze(self) -> Dict[str, Any]:
-        """
-        analyzes a binary file by parsing and disassembling it.
-
-        returns:
-            + Dict containing:
-                - binary_info: dictionary of parsed binary metadata
-                - instructions: list of disassembled instructions
-                - text_section_start: starting address of text section
-
-        raises:
-            ValueError: if binary parsing or disassembly fails
-        """
         self.binary_info = self.parser.parse(self.file_path)
         if not self.binary_info:
             raise ValueError("Failed to get binary information")

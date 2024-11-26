@@ -10,20 +10,6 @@ class Disassembler:
     def disassemble(
         self, bytes: bytes, start_address: int, endianness: str
     ) -> List[Dict[str, Any]]:
-        """
-        disassembles binary content into instructions.
-
-        args:
-            + bytes (bytes): raw binary content to disassemble
-            + start_address (int): starting address for disassembly
-            + endianness (str): "Little Endian" or "Big Endian"
-
-        returns:
-            + list of dictionaries containing:
-                - address: instruction address
-                - mnemonic: instruction mnemonic
-                - op_str: operand string
-        """
         if endianness == "Little Endian":
             return self.disassemble_little_endian(bytes, start_address)
         elif endianness == "Big Endian":

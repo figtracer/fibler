@@ -1,55 +1,48 @@
 import lief
 from typing import Dict, Any
 from core.vt import VirusTotalScanner
+from core.formatters.impexp import ImpExpFormatter
 
 
 class Parser:
     def __init__(self):
         self.scanner = VirusTotalScanner()
+        self.import_formatter = ImpExpFormatter()
+        self.binary = None
+
+    def __del__(self):
+        try:
+            if self.binary:
+                # cleanup iterators
+                if hasattr(self.binary, "imported_symbols"):
+                    self.binary.imported_symbols = None
+                if hasattr(self.binary, "exported_symbols"):
+                    self.binary.exported_symbols = None
+                if hasattr(self.binary, "libraries"):
+                    self.binary.libraries = None
+
+                # cleanup header refs
+                if hasattr(self.binary, "header"):
+                    if hasattr(self.binary.header, "flags_list"):
+                        self.binary.header.flags_list = None
+
+                # cleanup binary ifself
+                self.binary = None
+        except:
+            pass
 
     def parse(self, binary_path: str) -> Dict[str, Any]:
-        """
-        parses a binary file and extracts its metadata.
+        self.binary = lief.parse(binary_path)
 
-        args:
-            + binary_path (str): Path to the binary file
-
-        returns:
-            + Dict containing binary metadata including:
-                - file format, magic, architecture, flags
-                - section information and contents
-                - endianness and other format-specific data
-
-        raises:
-            ValueError: if file format is unsupported
-        """
-        binary = lief.parse(binary_path)
-
-        if isinstance(binary, lief.MachO.Binary):
-            return self._parse_macho(binary, binary_path)
-        elif isinstance(binary, lief.ELF.Binary):
-            return self._parse_elf(binary, binary_path)
+        if isinstance(self.binary, lief.MachO.Binary):
+            return self._parse_macho(self.binary, binary_path)
+        elif isinstance(self.binary, lief.ELF.Binary):
+            return self._parse_elf(self.binary, binary_path)
         else:
             raise ValueError("Unsupported file format")
 
     def _parse_macho(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
-        """
-        parses a Mach-O binary format file.
-
-        args:
-            + binary (lief.Binary): LIEF Binary object
-            + binary_path (str): Path to the binary file
-
-        returns:
-            + Dict containing Mach-O specific information:
-                - magic number, CPU type/subtype
-                - flags, commands, sections
-                - endianness and file type
-                - VirusTotal scan results
-
-        raises:
-            ValueError: if __text section is missing
-        """
+        file_format = "MACH-O"
         magic = hex(binary.header.magic)
         cpu_type = str(binary.header.cpu_type).split(".")[-1]
         file_type = str(binary.header.file_type).split(".")[-1]
@@ -68,8 +61,18 @@ class Parser:
         if binary.header.cpu_type == lief.MachO.Header.CPU_TYPE.ARM64:
             endianness = "Little Endian"
 
+        imports = []
+        if binary.imported_symbols:
+            raw_imports = [str(symbol) for symbol in binary.imported_symbols]
+            imports = self.import_formatter.process_imports(raw_imports, file_format)
+
+        exports = []
+        for symbol in binary.exported_symbols:
+            raw_exports = [str(symbol) for symbol in binary.exported_symbols]
+            exports = self.import_formatter.process_imports(raw_exports, file_format)
+
         return {
-            "file_format": "Mach-O",
+            "file_format": file_format,
             "magic": magic,
             "architecture": cpu_type,
             "file_type": file_type,
@@ -82,27 +85,11 @@ class Parser:
             "total": total,
             "positives": positives,
             "libraries": libraries,
+            "imports": imports,
+            "exports": exports,
         }
 
     def _parse_elf(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
-        """
-        parses an ELF binary format file.
-
-        args:
-            + binary (lief.Binary): LIEF Binary object
-            + binary_path (str): path to the binary file
-
-        returns:
-            + Dict containing ELF specific information:
-                - magic number
-                - flags, sections, segments
-                - endianness and file type
-                - entrypoint, program_header_offset
-                - VirusTotal scan results
-
-        raises:
-            ValueError: if __text section is missing
-        """
         # check endianness first to read magic correctly
         get_endianness = binary.header.identity_data
         if get_endianness == lief.ELF.Header.ELF_DATA.LSB:
@@ -114,6 +101,7 @@ class Parser:
         else:
             raise ValueError(f"Unkmown endianness in {binary}")
 
+        file_format = "ELF"
         magic = hex(int.from_bytes((binary.header.identity[:4]), byteorder=byteorder))
         machine_type = str(binary.header.machine_type).split(".")[-1]
         file_type = str(binary.header.file_type).split(".")[-1]
@@ -123,8 +111,8 @@ class Parser:
         program_header_offset = binary.header.program_header_offset  # segments table
         entrypoint = binary.header.entrypoint
         total, positives = self.scanner.get_av_reports(binary_path)
-        text_section = binary.get_section(".text")
 
+        text_section = binary.get_section(".text")
         if not text_section:
             raise ValueError(f"{binary} does not contain a .text section")
 
@@ -141,8 +129,18 @@ class Parser:
             if isinstance(entry, lief.ELF.DynamicEntryLibrary):
                 libraries.append(str(entry.name))
 
+        imports = []
+        if binary.imported_symbols:
+            raw_imports = [str(symbol) for symbol in binary.imported_symbols]
+            imports = self.import_formatter.process_imports(raw_imports, file_format)
+
+        exports = []
+        for symbol in binary.exported_symbols:
+            raw_exports = [str(symbol) for symbol in binary.exported_symbols]
+            exports = self.import_formatter.process_imports(raw_exports, file_format)
+
         return {
-            "file_format": "ELF",
+            "file_format": file_format,
             "magic": magic,
             "architecture": machine_type,  # architecture
             "file_type": file_type,  # executable, library...
@@ -157,4 +155,6 @@ class Parser:
             "total": total,
             "positives": positives,
             "libraries": libraries,
+            "imports": imports,
+            "exports": exports,
         }
