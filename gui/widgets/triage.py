@@ -1,13 +1,13 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame
 from PyQt5.QtCore import Qt
-from ..styles.default import get_triage_style
+from ..styles.default import _get_triage_style
 
 
 class TriageWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_layout()
-        self._setup_style_sheet()
+        self.setStyleSheet(_get_triage_style())
         self._setup_labels()
 
     def _setup_layout(self):
@@ -28,9 +28,6 @@ class TriageWidget(QWidget):
 
         self.layout.addWidget(triage_title)
         self.layout.addWidget(self.labels_container)
-
-    def _setup_style_sheet(self):
-        self.setStyleSheet(get_triage_style())
 
     def _setup_labels(self):
         self.labels = {}

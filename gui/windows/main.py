@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import (
+    QApplication,
     QMainWindow,
     QTableWidget,
     QTableWidgetItem,
@@ -14,22 +15,23 @@ from PyQt5.QtWidgets import (
     QAction,
 )
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSignalBlocker
 from core.analyzer import Analyzer
 from ..widgets.triage import TriageWidget
 from ..widgets.libraries import LibrariesWidget
 from ..widgets.imports import ImportsWidget
 from ..widgets.exports import ExportsWidget
+from ..widgets.sections import SectionsWidget
 
 
-from ..styles.default import get_main_style
+from ..styles.default import _get_main_style
 
 
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self._setup_window()
-        self._setup_style_sheet()
+        self.setStyleSheet(_get_main_style())
         self._setup_main_layout()
         self._setup_file_menu()
 
@@ -48,9 +50,6 @@ class Main(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.main_layout = QVBoxLayout(central_widget)
-
-    def _setup_style_sheet(self):
-        self.setStyleSheet(get_main_style())
 
     def _setup_main_layout(self):
         self.splitter = QSplitter(Qt.Horizontal)
@@ -87,20 +86,22 @@ class Main(QMainWindow):
 
         self.triage_widget = TriageWidget()
         self.libraries_widget = LibrariesWidget()
+        self.sections_widget = SectionsWidget()
+
+        # create a horizontal layout for the exports/imports widgets
         self.imports_widget = ImportsWidget()
         self.exports_widget = ExportsWidget()
-
         imports_exports_widget = QWidget()
         imports_exports_layout = QHBoxLayout(imports_exports_widget)
         imports_exports_layout.setContentsMargins(0, 0, 0, 0)
         imports_exports_layout.setSpacing(0)
-
         imports_exports_layout.addWidget(self.imports_widget)
         imports_exports_layout.addWidget(self.exports_widget)
 
         right_layout.addWidget(self.triage_widget)
         right_layout.addWidget(self.libraries_widget)
         right_layout.addWidget(imports_exports_widget)
+        right_layout.addWidget(self.sections_widget)
 
         # add the whole right layout+widget to the splitter
         self.splitter.addWidget(right_widget)
@@ -123,19 +124,16 @@ class Main(QMainWindow):
             self.load_binary(file_path)
 
     def load_binary(self, file_path):
-        # analyze the binary
-        analyzer = Analyzer(file_path)
-        self.binary_info = analyzer.analyze()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self.table.setUpdatesEnabled(False)
 
-        # get instructions
-        instructions = self.binary_info["instructions"]
-
-        # populate table and update info
-        self.populate_table(instructions)
-        self.update_table_info()
-        self.update_library_info()
-        self.update_imports_info()
-        self.update_exports_info()
+        try:
+            analyzer = Analyzer(file_path)
+            self.binary_info = analyzer.analyze()
+            self._bulk_update_widgets()
+        finally:
+            self.table.setUpdatesEnabled(True)
+            QApplication.restoreOverrideCursor()
 
     def show_context_menu(self, position):
         item = self.table.itemAt(position)
@@ -206,6 +204,7 @@ class Main(QMainWindow):
 
     def populate_table(self, instructions: list):
         self.table.setRowCount(len(instructions))
+        self.table.setSortingEnabled(False)  # performance
         for row, insn in enumerate(instructions):
             address = insn["address"]
             self.table.setItem(row, 0, QTableWidgetItem(f"{insn['address']:08x}"))
@@ -220,63 +219,35 @@ class Main(QMainWindow):
 
             self.table.setItem(row, 2, QTableWidgetItem(operands_text))
 
-    def update_table_info(self):
-        self.triage_widget.update_info(
-            "File Format", self.binary_info["binary_info"]["file_format"]
-        )
+    def _bulk_update_widgets(self):
+        binary_info = self.binary_info["binary_info"]
 
-        self.triage_widget.update_info(
-            "Magic", self.binary_info["binary_info"]["magic"]
-        )
-
-        self.triage_widget.update_info(
-            "Architecture", self.binary_info["binary_info"]["architecture"]
-        )
-
-        self.triage_widget.update_info(
-            "Type", self.binary_info["binary_info"]["file_type"]
-        )
-
-        flags = " | ".join(
-            str(flag).split(".")[-1]
-            for flag in self.binary_info["binary_info"]["flags"]
-        )
-        if flags:
-            self.triage_widget.update_info("Flags", flags)
-        else:
-            self.triage_widget.update_info("Flags", "none")
-
-        self.triage_widget.update_info(
-            "Text Section Start",
-            hex(self.binary_info["binary_info"]["text_section_start"]),
-        )
-
-        self.triage_widget.update_info(
-            "Endianness", self.binary_info["binary_info"]["endianness"]
-        )
-
-        self.triage_widget.update_info(
-            "Total AV Reports", self.binary_info["binary_info"]["total"]
-        )
-
-        self.triage_widget.update_info(
-            "Positive AV Reports", self.binary_info["binary_info"]["positives"]
-        )
-
-    def update_library_info(self):
-        if "libraries" in self.binary_info["binary_info"]:
-            self.libraries_widget.update_libraries(
-                self.binary_info["binary_info"]["libraries"]
+        updates = {
+            "File Format": binary_info["file_format"],
+            "Magic": binary_info["magic"],
+            "Architecture": binary_info["architecture"],
+            "Type": binary_info["file_type"],
+            "Flags": " | ".join(
+                str(flag).split(".")[-1] for flag in binary_info["flags"]
             )
+            or "none",
+            "Text Section Start": hex(binary_info["text_section_start"]),
+            "Endianness": binary_info["endianness"],
+            "Total AV Reports": binary_info["total"],
+            "Positive AV Reports": binary_info["positives"],
+        }
 
-    def update_imports_info(self):
-        if "imports" in self.binary_info["binary_info"]:
-            self.imports_widget.update_imports(
-                self.binary_info["binary_info"]["imports"]
-            )
+        with QSignalBlocker(self.triage_widget):
+            for key, value in updates.items():
+                self.triage_widget.update_info(key, value)
 
-    def update_exports_info(self):
-        if "exports" in self.binary_info["binary_info"]:
-            self.exports_widget.update_exports(
-                self.binary_info["binary_info"]["exports"]
-            )
+        self.populate_table(self.binary_info["instructions"])
+
+        if "libraries" in binary_info:
+            self.libraries_widget.update_libraries(binary_info["libraries"])
+        if "imports" in binary_info:
+            self.imports_widget.update_items(binary_info["imports"])
+        if "exports" in binary_info:
+            self.exports_widget.update_items(binary_info["exports"])
+        if "sections" in binary_info:
+            self.sections_widget.update_items(binary_info["sections"])

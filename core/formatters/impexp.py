@@ -13,7 +13,7 @@ class ImpExpFormatter:
                     # 'strtok@@GLIBC_2.17 (FUNC/GLOBAL): --> 'strtok@@', '2.17 FUNC/GLOBAL...'
                     version = entry.split("GLIBC_")[1]
                     version = version.split(" ")[0].strip()
-                    return f"{function_name} @GLIBC_{version}"
+                    return f"{function_name}@GLIBC_{version}"
                 else:
                     # split on space to separate function name and rest
                     parts = entry.split(" ")
@@ -26,7 +26,7 @@ class ImpExpFormatter:
                 if "GLIBC_" in entry:
                     version = entry.split("GLIBC_")[1]
                     version = version.split("(")[0].strip()
-                    return f"{function_name} @GLIBC_{version}"
+                    return f"{function_name}@GLIBC_{version}"
                 return function_name
 
             # check if it's in the format "function (FUNC/GLOBAL)"
@@ -47,10 +47,12 @@ class ImpExpFormatter:
         return entry
 
     @staticmethod
-    def process_imports(imports_list: list, binary_format: str) -> List:
-        formatted = [
-            ImpExpFormatter.format_import(imp, binary_format)
-            for imp in imports_list
-            if imp
+    def process_impexp(imports_list: list, binary_format: str) -> List:
+        return [
+            import_info
+            for import_info in (
+                ImpExpFormatter.format_import(imp, binary_format)
+                for imp in imports_list
+            )
+            if import_info is not None
         ]
-        return formatted

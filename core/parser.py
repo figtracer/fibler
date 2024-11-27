@@ -2,12 +2,17 @@ import lief
 from typing import Dict, Any
 from core.vt import VirusTotalScanner
 from core.formatters.impexp import ImpExpFormatter
+from core.formatters.sections import SectionsFormatter
+
+# these leaks were expected behaviour but removed from the output to prevent confusion in the UI
+lief.disable_leak_warning()
 
 
 class Parser:
     def __init__(self):
         self.scanner = VirusTotalScanner()
-        self.import_formatter = ImpExpFormatter()
+        self.impexp_formatter = ImpExpFormatter()
+        self.sections_formatter = SectionsFormatter()
         self.binary = None
 
     def __del__(self):
@@ -20,6 +25,8 @@ class Parser:
                     self.binary.exported_symbols = None
                 if hasattr(self.binary, "libraries"):
                     self.binary.libraries = None
+                if hasattr(self.binary, "sections"):
+                    self.binary.sections = None
 
                 # cleanup header refs
                 if hasattr(self.binary, "header"):
@@ -61,15 +68,23 @@ class Parser:
         if binary.header.cpu_type == lief.MachO.Header.CPU_TYPE.ARM64:
             endianness = "Little Endian"
 
+        # iterators
         imports = []
         if binary.imported_symbols:
             raw_imports = [str(symbol) for symbol in binary.imported_symbols]
-            imports = self.import_formatter.process_imports(raw_imports, file_format)
+            imports = self.impexp_formatter.process_impexp(raw_imports, file_format)
 
         exports = []
-        for symbol in binary.exported_symbols:
+        if binary.exported_symbols:
             raw_exports = [str(symbol) for symbol in binary.exported_symbols]
-            exports = self.import_formatter.process_imports(raw_exports, file_format)
+            exports = self.impexp_formatter.process_impexp(raw_exports, file_format)
+
+        sections = []
+        if binary.sections:
+            raw_sections = [str(section) for section in binary.sections]
+            sections = self.sections_formatter.process_sections(
+                raw_sections, file_format
+            )
 
         return {
             "file_format": file_format,
@@ -87,6 +102,7 @@ class Parser:
             "libraries": libraries,
             "imports": imports,
             "exports": exports,
+            "sections": sections,
         }
 
     def _parse_elf(self, binary: lief.Binary, binary_path: str) -> Dict[str, Any]:
@@ -124,6 +140,7 @@ class Parser:
         else:
             raise ValueError("Couldn't get endianness")
 
+        # iterators
         libraries = []
         for entry in binary.dynamic_entries:
             if isinstance(entry, lief.ELF.DynamicEntryLibrary):
@@ -132,12 +149,19 @@ class Parser:
         imports = []
         if binary.imported_symbols:
             raw_imports = [str(symbol) for symbol in binary.imported_symbols]
-            imports = self.import_formatter.process_imports(raw_imports, file_format)
+            imports = self.impexp_formatter.process_impexp(raw_imports, file_format)
 
         exports = []
-        for symbol in binary.exported_symbols:
+        if binary.exported_symbols:
             raw_exports = [str(symbol) for symbol in binary.exported_symbols]
-            exports = self.import_formatter.process_imports(raw_exports, file_format)
+            exports = self.impexp_formatter.process_impexp(raw_exports, file_format)
+
+        sections = []
+        if binary.sections:
+            raw_sections = [str(section) for section in binary.sections]
+            sections = self.sections_formatter.process_sections(
+                raw_sections, file_format
+            )
 
         return {
             "file_format": file_format,
@@ -157,4 +181,5 @@ class Parser:
             "libraries": libraries,
             "imports": imports,
             "exports": exports,
+            "sections": sections,
         }

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDesktopWidget, QFileDialog
-from ..styles.default import get_welcome_style
+from ..styles.default import _get_welcome_style
 from gui.windows.main import Main
 
 
@@ -9,16 +9,13 @@ class Welcome(QMainWindow):
     def __init__(self):
         super().__init__()
         self._setup_window()
-        self._setup_style_sheet()
+        self.setStyleSheet(_get_welcome_style())
         self._setup_layout()
 
     def _setup_window(self):
         self.setWindowTitle("Fibler")
         screen = QDesktopWidget().screenGeometry()
         self.setGeometry(0, 0, screen.width(), screen.height())
-
-    def _setup_style_sheet(self):
-        self.setStyleSheet(get_welcome_style())
 
     def _setup_layout(self):
         central_widget = QWidget()

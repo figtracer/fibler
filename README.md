@@ -46,7 +46,8 @@ python fibler.py
 ```
 ├── core/
 │   ├── formatters/
-│   │   └── impexp.py
+│   │   ├── impexp.py
+│   │   └── sections.py
 │   ├── analyzer.py
 │   ├── disassembler.py
 │   ├── parser.py
@@ -60,9 +61,12 @@ python fibler.py
 │   ├── styles/
 │   │   └── default.py
 │   ├── widgets/
+│   │   ├── base/
+│   │   │   └── scroll.py
 │   │   ├── exports.py
 │   │   ├── imports.py
 │   │   ├── libraries.py
+│   │   ├── sections.py
 │   │   └── triage.py
 │   └── windows/
 │       ├── main.py
@@ -72,22 +76,6 @@ python fibler.py
 ├── README.md
 └── requirements.txt
 ```
-
-## Memory Management
-
-When running the application, you may notice nanobind reporting leaked instances of LIEF's type system:
-```
-nanobind: leaked X instances!
- - leaked instance of type "lief._lief.VA_TYPES"
- - leaked instance of type "lief._lief.FORMATS"
-```
-
-These messages are **expected behavior** and can be safely ignored. They represent LIEF's static type system initialization, which:
-- Are one-time allocations that don't grow with usage
-- Get automatically cleaned up when Python exits
-- Are required for Python-C++ interoperability
-
-These are not memory leaks in your binary analysis workflow and won't affect the application's performance or memory usage over time.
 
 ## Contributing
 

@@ -1,7 +1,6 @@
 from core.disassembler import Disassembler
 from core.parser import Parser
 from typing import Dict, Any
-import gc
 
 
 class Analyzer:

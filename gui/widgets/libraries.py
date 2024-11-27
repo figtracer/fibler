@@ -1,13 +1,13 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QScrollArea
 from PyQt5.QtCore import Qt
-from ..styles.default import get_libraries_style
+from ..styles.default import _get_libraries_style
 
 
 class LibrariesWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_layout()
-        self._setup_style_sheet()
+        self.setStyleSheet(_get_libraries_style())
 
     def _setup_layout(self):
         self.layout = QVBoxLayout(self)
@@ -43,13 +43,9 @@ class LibrariesWidget(QWidget):
         self.layout.addWidget(libraries_title)
         self.layout.addWidget(outer_frame)
 
-    def _setup_style_sheet(self):
-        self.setStyleSheet(get_libraries_style())
-
     def add_library_label(self, text: str):
         lib_label = QLabel(text)
         lib_label.setWordWrap(True)
-        lib_label.setStyleSheet("color: #E0E0E0;")
         lib_label.setObjectName("library_item")
         lib_label.setProperty("class", "library_item")
         self.libraries_layout.addWidget(lib_label)

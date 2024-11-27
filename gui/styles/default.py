@@ -1,4 +1,4 @@
-def get_welcome_style():
+def _get_welcome_style():
     return """
             QMainWindow, QWidget {
                 background-color: #191919;
@@ -26,7 +26,7 @@ def get_welcome_style():
         """
 
 
-def get_main_style():
+def _get_main_style():
     return """
             QMainWindow {
                 background-color: #191919;
@@ -126,69 +126,7 @@ def get_main_style():
         """
 
 
-def get_imports_style():
-    return """
-            QWidget {
-                background-color: #191919;
-            }
-            
-            QLabel {
-                color: #E0E0E0;
-                font-family: "IosevkaTerm Nerd Font";
-                font-size: 13px;
-                padding: 4px 0px;
-            }
-
-            QLabel#imports_title {
-                color: #FFFFFF;
-                font-family: "IosevkaTerm Nerd Font";
-                font-size: 20px;
-                font-weight: bold;
-                padding: 0px;
-                margin: 10px 0px;
-            }
-            
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
-            
-            QScrollBar:vertical {
-                border: none;
-                background: #1e1e1e;
-                width: 10px;
-                margin: 0px;
-            }
-            
-            QScrollBar::handle:vertical {
-                background: #404040;
-                min-height: 20px;
-                border-radius: 5px;
-            }
-            
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-            
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
-            
-            QFrame#imports_container {
-                background-color: #191919;
-                border: 1px solid #2D2D2D;
-                border-radius: 4px;
-            }
-            
-            QLabel.imports_item {
-                color: #E0E0E0;
-                background-color: transparent;
-                padding: 8px;
-            }
-        """
-
-
-def get_libraries_style():
+def _get_libraries_style():
     return """
             QWidget { 
                 background-color: #191919;
@@ -224,7 +162,7 @@ def get_libraries_style():
         """
 
 
-def get_triage_style():
+def _get_triage_style():
     return """
             QWidget { 
                 background-color: #191919;
@@ -265,63 +203,47 @@ def get_triage_style():
         """
 
 
-def get_exports_style():
-    return """
-            QWidget {
-                background-color: #191919;
-            }
-            
-            QLabel {
+def _get_base_widget_style(title):
+    return f"""
+        QWidget {{
+        background-color: #191919;
+            }}
+        
+            QLabel {{
                 color: #E0E0E0;
                 font-family: "IosevkaTerm Nerd Font";
                 font-size: 13px;
                 padding: 4px 0px;
-            }
+            }}
 
-            QLabel#exports_title {
+            QLabel#{title}_title {{
                 color: #FFFFFF;
-                font-family: "IosevkaTerm Nerd Font";
                 font-size: 20px;
                 font-weight: bold;
                 padding: 0px;
                 margin: 10px 0px;
-            }
-            
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
-            
-            QScrollBar:vertical {
-                border: none;
-                background: #1e1e1e;
-                width: 10px;
-                margin: 0px;
-            }
-            
-            QScrollBar::handle:vertical {
-                background: #404040;
-                min-height: 20px;
-                border-radius: 5px;
-            }
-            
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-            
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
-            
-            QFrame#exports_container {
+            }}
+        
+            QFrame#{title}_container {{
                 background-color: #191919;
                 border: 1px solid #2D2D2D;
                 border-radius: 4px;
-            }
-            
-            QLabel.exports_item {
-                color: #E0E0E0;
+            }}
+        
+            QScrollArea {{
+                border: none;
                 background-color: transparent;
-                padding: 8px;
-            }
+            }}
+        
+            QScrollBar:vertical {{
+                border: none;
+                background: #1e1e1e;
+                width: 10px;
+            }}
+        
+            QScrollBar::handle:vertical {{
+                background: #404040;
+                min-height: 20px;
+                border-radius: 5px;
+            }}
         """
