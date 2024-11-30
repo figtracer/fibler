@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
+    QMessageBox,
     QTableWidget,
     QTableWidgetItem,
     QFileDialog,
@@ -32,13 +33,18 @@ class Main(QMainWindow):
         super().__init__()
         self._setup_window()
         self.setStyleSheet(_get_main_style())
-        self._setup_main_layout()
+        self._setup_layout()
         self._setup_file_menu()
 
         self.binary_info = None
         self.instruction_comments = (
             {}
-        )  # dictionary to store comments for each instruction
+        )
+
+    def closeEvent(self, event):
+        self.instruction_comments.clear()
+        self.binary_info = None
+        super().closeEvent(event)
 
     def _setup_window(self):
         self.setWindowTitle("Fibler")
@@ -46,12 +52,12 @@ class Main(QMainWindow):
         self.setGeometry(0, 0, screen.width(), screen.height())
 
         # main widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
 
-        self.main_layout = QVBoxLayout(central_widget)
+        self.main_layout = QVBoxLayout(main_widget)
 
-    def _setup_main_layout(self):
+    def _setup_layout(self):
         self.splitter = QSplitter(Qt.Horizontal)
 
         # <-------------------------- left side setup
@@ -128,9 +134,15 @@ class Main(QMainWindow):
         self.table.setUpdatesEnabled(False)
 
         try:
+            self.instruction_comments.clear()
+            self.binary_info = None
+
             analyzer = Analyzer(file_path)
             self.binary_info = analyzer.analyze()
             self._bulk_update_widgets()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load binary: {e}")
+
         finally:
             self.table.setUpdatesEnabled(True)
             QApplication.restoreOverrideCursor()
@@ -160,7 +172,7 @@ class Main(QMainWindow):
             lambda: self.delete_comment(address, row)
         )
 
-        # handles where the context menu will appear
+        # this handles where the context menu will appear
         context_menu.exec_(self.table.viewport().mapToGlobal(position))
 
     # adds comment to self.instruction_comments
@@ -196,7 +208,7 @@ class Main(QMainWindow):
 
         # format the operands with comment
         if comment:
-            new_text = f"{operands}    ; {comment}"
+            new_text = f"{operands:<30};{comment}"
         else:
             new_text = operands
 
@@ -204,23 +216,33 @@ class Main(QMainWindow):
 
     def populate_table(self, instructions: list):
         self.table.setRowCount(len(instructions))
-        self.table.setSortingEnabled(False)  # performance
-        for row, insn in enumerate(instructions):
-            address = insn["address"]
-            self.table.setItem(row, 0, QTableWidgetItem(f"{insn['address']:08x}"))
-            self.table.setItem(row, 1, QTableWidgetItem(insn["mnemonic"]))
+        self.table.setSortingEnabled(False)
 
+        items = []
+        for insn in instructions:
+            address = insn["address"]
+            address_item = QTableWidgetItem(f"{address:08x}")
+            mnemonic_item = QTableWidgetItem(insn["mnemonic"])
+            
             operands = insn["op_str"]
             comment = self.instruction_comments.get(address, "")
-            if comment:
-                operands_text = f"{operands}    ; {comment}"
-            else:
-                operands_text = operands
+            operands_text = f"{operands:<30};{comment}" if comment else operands
+            operands_item = QTableWidgetItem(operands_text)
+            
+            items.append((address_item, mnemonic_item, operands_item))
 
-            self.table.setItem(row, 2, QTableWidgetItem(operands_text))
+        for row, (addr_item, mnem_item, op_item) in enumerate(items):
+            self.table.setItem(row, 0, addr_item)
+            self.table.setItem(row, 1, mnem_item)
+            self.table.setItem(row, 2, op_item)
+
+        self.table.setSortingEnabled(True)
 
     def _bulk_update_widgets(self):
         binary_info = self.binary_info["binary_info"]
+        
+        if binary_info is None:
+            raise ValueError("Couldn't get binary information")
 
         updates = {
             "File Format": binary_info["file_format"],
@@ -231,7 +253,7 @@ class Main(QMainWindow):
                 str(flag).split(".")[-1] for flag in binary_info["flags"]
             )
             or "none",
-            "Text Section Start": hex(binary_info["text_section_start"]),
+            "Text Section Start": hex(binary_info["va"]),
             "Endianness": binary_info["endianness"],
             "Total AV Reports": binary_info["total"],
             "Positive AV Reports": binary_info["positives"],
@@ -244,7 +266,7 @@ class Main(QMainWindow):
         self.populate_table(self.binary_info["instructions"])
 
         if "libraries" in binary_info:
-            self.libraries_widget.update_libraries(binary_info["libraries"])
+            self.libraries_widget.update_items(binary_info["libraries"])
         if "imports" in binary_info:
             self.imports_widget.update_items(binary_info["imports"])
         if "exports" in binary_info:

@@ -46,6 +46,7 @@ python fibler.py
 ```
 ├── core/
 │   ├── formatters/
+│   │   ├── libraries.py
 │   │   ├── impexp.py
 │   │   └── sections.py
 │   ├── analyzer.py

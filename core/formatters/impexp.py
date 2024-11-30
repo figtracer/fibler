@@ -3,7 +3,7 @@ from typing import List
 
 class ImpExpFormatter:
     @staticmethod
-    def format_import(entry: str, binary_format: str) -> List:
+    def format_import(entry: str, binary_format: str) -> str:
         if binary_format.upper() == "ELF":
             # check if it's in the format "function @GLIBC_X.Y (FUNC/...)"
             if "@GLIBC_" in entry:

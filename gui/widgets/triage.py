@@ -51,18 +51,18 @@ class TriageWidget(QWidget):
         self.labels_layout.addStretch()
 
     # method to populate self.labels with the common labels
-    def add_label(self, field_name: str):
-        label = QLabel(f"{field_name}: ")
+    def add_label(self, name: str):
+        label = QLabel(f"{name}: ")
         label.setFixedHeight(29)
-        self.labels[field_name] = label
+        self.labels[name] = label
         self.labels_layout.addWidget(label)
 
     # updates self.labels information
-    def update_info(self, field_name: str, value: str):
-        if field_name in self.labels:
-            text = f'<span style="color: #808080;">{field_name}:</span> <span style="color: #E0E0E0;">{value}</span>'
-            self.labels[field_name].setText(text)
+    def update_info(self, name: str, value: str):
+        if name in self.labels:
+            text = f'<span style="color: #808080;">{name}:</span> <span style="color: #E0E0E0;">{value}</span>'
+            self.labels[name].setText(text)
         else:
-            self.add_label(field_name)
-            text = f'<span style="color: #808080;">{field_name}:</span> <span style="color: #E0E0E0;">{value}</span>'
-            self.labels[field_name].setText(text)
+            self.add_label(name)
+            text = f'<span style="color: #808080;">{name}:</span> <span style="color: #E0E0E0;">{value}</span>'
+            self.labels[name].setText(text)
