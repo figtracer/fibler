@@ -3,3 +3,5 @@ capstone
 PyQt5
 python-dotenv
 requests
+pybind11>=2.10.0
+setuptools

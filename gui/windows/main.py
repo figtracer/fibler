@@ -17,9 +17,9 @@ from PyQt5.QtWidgets import (
 )
 
 from PyQt5.QtCore import Qt, QSignalBlocker
+from PyQt5.QtGui import QColor
 from core.analyzer import Analyzer
 from ..widgets.triage import TriageWidget
-from ..widgets.libraries import LibrariesWidget
 from ..widgets.imports import ImportsWidget
 from ..widgets.exports import ExportsWidget
 from ..widgets.sections import SectionsWidget
@@ -35,11 +35,11 @@ class Main(QMainWindow):
         self.setStyleSheet(_get_main_style())
         self._setup_layout()
         self._setup_file_menu()
+        self._setup_jump_menu()
 
         self.binary_info = None
-        self.instruction_comments = (
-            {}
-        )
+        self.instruction_comments = {}
+        self.section_rows = {}
 
     def closeEvent(self, event):
         self.instruction_comments.clear()
@@ -60,7 +60,7 @@ class Main(QMainWindow):
     def _setup_layout(self):
         self.splitter = QSplitter(Qt.Horizontal)
 
-        # <-------------------------- left side setup
+        # <<<<<<<<-------------------- left side setup
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
@@ -91,7 +91,6 @@ class Main(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
 
         self.triage_widget = TriageWidget()
-        self.libraries_widget = LibrariesWidget()
         self.sections_widget = SectionsWidget()
 
         # create a horizontal layout for the exports/imports widgets
@@ -105,7 +104,7 @@ class Main(QMainWindow):
         imports_exports_layout.addWidget(self.exports_widget)
 
         right_layout.addWidget(self.triage_widget)
-        right_layout.addWidget(self.libraries_widget)
+
         right_layout.addWidget(imports_exports_widget)
         right_layout.addWidget(self.sections_widget)
 
@@ -121,6 +120,11 @@ class Main(QMainWindow):
         file_menu = menu.addMenu("File")
         open_action = file_menu.addAction("Open Binary")
         open_action.triggered.connect(self.open_binary)
+
+    def _setup_jump_menu(self):
+        self.jump_menu = self.menuBar().addMenu("Jump To")
+        self.sections_menu = QMenu("Sections", self)
+        self.jump_menu.addMenu(self.sections_menu)
 
     def open_binary(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -138,7 +142,9 @@ class Main(QMainWindow):
             self.binary_info = None
 
             analyzer = Analyzer(file_path)
+            print(f"Analyzing {file_path}...")
             self.binary_info = analyzer.analyze()
+            print(f"Updating widgets...")
             self._bulk_update_widgets()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load binary: {e}")
@@ -214,33 +220,86 @@ class Main(QMainWindow):
 
         operands_item.setText(new_text)
 
-    def populate_table(self, instructions: list):
-        self.table.setRowCount(len(instructions))
+    def populate_table(self, sections_instructions: dict):
+        total_rows = sum(
+            len(instructions) for instructions in sections_instructions.values()
+        )
+
+        # extra rows for section titles
+        total_rows += len(sections_instructions)
+
+        self.table.setRowCount(total_rows)
         self.table.setSortingEnabled(False)
 
-        items = []
-        for insn in instructions:
-            address = insn["address"]
-            address_item = QTableWidgetItem(f"{address:08x}")
-            mnemonic_item = QTableWidgetItem(insn["mnemonic"])
-            
-            operands = insn["op_str"]
-            comment = self.instruction_comments.get(address, "")
-            operands_text = f"{operands:<30};{comment}" if comment else operands
-            operands_item = QTableWidgetItem(operands_text)
-            
-            items.append((address_item, mnemonic_item, operands_item))
+        current_row = 0
 
-        for row, (addr_item, mnem_item, op_item) in enumerate(items):
-            self.table.setItem(row, 0, addr_item)
-            self.table.setItem(row, 1, mnem_item)
-            self.table.setItem(row, 2, op_item)
+        # Clear previous sections menu
+        self.sections_menu.clear()
+        self.section_rows.clear()
+
+        for section_name, instructions in sections_instructions.items():
+            # Store section row position
+            self.section_rows[section_name] = current_row
+
+            # Add menu action for this section
+            action = self.sections_menu.addAction(section_name)
+            action.triggered.connect(
+                lambda checked, row=current_row: self.jump_to_row(row)
+            )
+
+            # Add section header row
+            header_item = QTableWidgetItem(f"Section: {section_name}")
+            header_item.setData(Qt.UserRole, "true")
+            header_item.setTextAlignment(Qt.AlignCenter)
+            header_item.setFlags(Qt.ItemIsEnabled)
+
+            # Span the section header across all columns
+            self.table.setSpan(current_row, 0, 1, 3)
+            self.table.setItem(current_row, 0, header_item)
+
+            self.table.setRowHeight(current_row, 60)
+
+            current_row += 1
+
+            # Add instructions for this section
+            for insn in instructions:
+
+                address = insn["address"]
+                address_item = QTableWidgetItem(f"{address:08x}")
+                mnemonic_item = QTableWidgetItem(insn["mnemonic"])
+
+                operands = insn["op_str"]
+                comment = self.instruction_comments.get(address, "")
+                operands_text = f"{operands:<30};{comment}" if comment else operands
+                operands_item = QTableWidgetItem(operands_text)
+
+                self.table.setItem(current_row, 0, address_item)
+                self.table.setItem(current_row, 1, mnemonic_item)
+                self.table.setItem(current_row, 2, operands_item)
+
+                self.table.setRowHeight(current_row, 30)
+
+                current_row += 1
 
         self.table.setSortingEnabled(True)
 
+    def jump_to_row(self, row):
+        """Jump to the specified row in the table"""
+        # Clear any existing selection
+        self.table.clearSelection()
+
+        # Scroll to the row
+        self.table.scrollTo(self.table.model().index(row, 0))
+
+        # Select the row
+        self.table.selectRow(row)
+
+        # Set focus to the table
+        self.table.setFocus()
+
     def _bulk_update_widgets(self):
         binary_info = self.binary_info["binary_info"]
-        
+
         if binary_info is None:
             raise ValueError("Couldn't get binary information")
 
@@ -249,10 +308,6 @@ class Main(QMainWindow):
             "Magic": binary_info["magic"],
             "Architecture": binary_info["architecture"],
             "Type": binary_info["file_type"],
-            "Flags": " | ".join(
-                str(flag).split(".")[-1] for flag in binary_info["flags"]
-            )
-            or "none",
             "Text Section Start": hex(binary_info["va"]),
             "Endianness": binary_info["endianness"],
             "Total AV Reports": binary_info["total"],
@@ -265,8 +320,6 @@ class Main(QMainWindow):
 
         self.populate_table(self.binary_info["instructions"])
 
-        if "libraries" in binary_info:
-            self.libraries_widget.update_items(binary_info["libraries"])
         if "imports" in binary_info:
             self.imports_widget.update_items(binary_info["imports"])
         if "exports" in binary_info:

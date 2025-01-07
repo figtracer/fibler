@@ -1,52 +1,62 @@
-import logging
 from core.disassembler import Disassembler
 from core.parser import Parser
 from typing import Dict, Any
 
-logger = logging.getLogger(__name__)
-
 
 class Analyzer:
     def __init__(self, file_path: str):
+        print(f"Initializing Analyzer with file: {file_path}")
         self.file_path = file_path
         self.binary_info = None
-        self.parser: Parser = Parser()
-        self.disassembler: Disassembler = Disassembler()
-
-    def __del__(self):
         try:
-            self.binary_info = None
-            self.parser = None
-            self.disassembler = None
+            print("Creating Parser instance")
+            self.parser: Parser = Parser()
+            print("Creating Disassembler instance")
+            self.disassembler: Disassembler = Disassembler()
         except Exception as e:
-            logger.error(f"Error during Analyzer cleanup: {e}")
+            print(f"Error during initialization: {e}")
+            raise
 
     def analyze(self) -> Dict[str, Any]:
-        if self.parser is None:
-            raise ValueError("Parser is not initialized")
+        print("Starting analysis")
+        try:
+            if self.parser is None:
+                raise ValueError("Parser is not initialized")
 
-        # cleanup
-        self.binary_info = None
+            print("About to parse binary")
+            self.binary_info = self.parser.parse(self.file_path)
+            if not self.binary_info:
+                raise ValueError("Failed to get binary information")
 
-        self.binary_info = self.parser.parse(self.file_path)
-        if not self.binary_info:
-            raise ValueError("Failed to get binary information")
+            print("Binary info obtained")
 
-        if not self.disassembler:
-            raise ValueError("Disassembler is not initialized")
+            if not self.disassembler:
+                raise ValueError("Disassembler is not initialized")
 
-        instructions = self.disassembler.disassemble(
-            self.binary_info["architecture"],
-            self.binary_info["content"],
-            self.binary_info["va"],
-            self.binary_info["endianness"],
-        )
+            print("About to disassemble")
+            instructions = self.disassembler.disassemble_all_sections(self.binary_info)
 
-        if not instructions:
-            raise ValueError("Couldn't get disassembled instructions")
+            # initialize fallback if the binary is obfuscated / no sections.
+            fallback_instructions = None
+            if not instructions:
+                print("No sections found\n\tAttempting fallback disassembly...")
+                fallback_instructions = self.disassembler.disassemble(
+                    self.binary_info["architecture"],
+                    self.binary_info["content"],
+                    self.binary_info["va"],
+                    self.binary_info["endianness"],
+                )
 
-        return {
-            "binary_info": self.binary_info,
-            "instructions": instructions,
-            "va": self.binary_info["va"],
-        }
+            if fallback_instructions:
+                instructions = fallback_instructions
+                print(f"Fallback disassembly found {len(instructions)} instructions")
+
+            return {
+                "binary_info": self.binary_info,
+                "instructions": instructions,
+                "va": self.binary_info["va"],
+            }
+
+        except Exception as e:
+            print(f"Error in analyze(): {e}")
+            raise

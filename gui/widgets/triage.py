@@ -39,7 +39,6 @@ class TriageWidget(QWidget):
             "Magic",
             "Architecture",
             "Type",
-            "Flags",
             "Text Section Start",
             "Endianness",
             "Total AV Reports",

@@ -72,8 +72,14 @@ def _get_main_style():
             }
             
             QTableWidget::item:selected {
-                background-color: #2C4F6D;
+                background-color: #400000;
                 color: #FFFFFF;
+            }
+            
+            QTableWidget::item[section="true"] {
+                padding: 10px;
+                text-align: center;
+                font-weight: bold;
             }
             
             QHeaderView::section {
@@ -122,42 +128,6 @@ def _get_main_style():
                 background-color: #2D2D2D;
                 max-height: 2px;
                 margin: 10px 0px; 
-            }
-        """
-
-
-def _get_libraries_style():
-    return """
-            QWidget { 
-                background-color: #191919;
-            }
-            
-            QLabel {
-                color: #E0E0E0;
-                font-family: "IosevkaTerm Nerd Font";
-                font-size: 13px;
-                padding: 4px 0px;
-            }
-            
-            QLabel#libraries_title {
-                color: #FFFFFF;
-                font-family: "IosevkaTerm Nerd Font";
-                font-size: 20px;
-                font-weight: bold;
-                padding: 0px;
-                margin: 10px 0px;
-            }
-            
-            QFrame#libraries_container {
-                background-color: #191919;
-                border: 1px solid #2D2D2D;
-                border-radius: 4px;
-            }
-            
-            QLabel.library_item {
-                color: #E0E0E0;
-                background-color: transparent;
-                padding: 8px;
             }
         """
 
