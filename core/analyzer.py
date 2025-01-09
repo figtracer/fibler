@@ -1,5 +1,6 @@
 from core.disassembler import Disassembler
 from core.parser import Parser
+from .database import BinaryDatabase
 from typing import Dict, Any
 
 
@@ -8,6 +9,7 @@ class Analyzer:
         print(f"Initializing Analyzer with file: {file_path}")
         self.file_path = file_path
         self.binary_info = None
+        self.db = BinaryDatabase()
         try:
             print("Creating Parser instance")
             self.parser: Parser = Parser()
@@ -50,6 +52,8 @@ class Analyzer:
             if fallback_instructions:
                 instructions = fallback_instructions
                 print(f"Fallback disassembly found {len(instructions)} instructions")
+
+            self.db.store_analysis(self.file_path, self.binary_info)
 
             return {
                 "binary_info": self.binary_info,
