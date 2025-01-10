@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import (
 )
 
 from PyQt5.QtCore import Qt, QSignalBlocker
-from PyQt5.QtGui import QColor
 from core.analyzer import Analyzer
 from ..widgets.triage import TriageWidget
 from ..widgets.imports import ImportsWidget
@@ -284,17 +283,11 @@ class Main(QMainWindow):
         self.table.setSortingEnabled(True)
 
     def jump_to_row(self, row):
-        """Jump to the specified row in the table"""
-        # Clear any existing selection
         self.table.clearSelection()
 
-        # Scroll to the row
         self.table.scrollTo(self.table.model().index(row, 0))
-
-        # Select the row
         self.table.selectRow(row)
 
-        # Set focus to the table
         self.table.setFocus()
 
     def _bulk_update_widgets(self):

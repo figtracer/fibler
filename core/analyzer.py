@@ -58,7 +58,6 @@ class Analyzer:
             return {
                 "binary_info": self.binary_info,
                 "instructions": instructions,
-                "va": self.binary_info["va"],
             }
 
         except Exception as e:

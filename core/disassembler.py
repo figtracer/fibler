@@ -25,10 +25,9 @@ class Disassembler:
         if not info["executable_sections"]:
             print("No executable sections found. Attempting fallback disassembly...")
             try:
-                # Create a pseudo-section for the entire binary
-                arch = "AArch64" if info["architecture"] == "AArch64" else "ARM"
+                # create a pseudo-section for the entire binary
                 all_instructions = self.disassemble(
-                    arch,
+                    info["architecture"],
                     bytes(info["content"]),
                     info["va"],
                     info["endianness"],
@@ -55,9 +54,8 @@ class Disassembler:
                         print(f"Skipping empty section: {section.name}")
                         continue
 
-                    arch = "AArch64" if info["architecture"] == "AArch64" else "ARM"
                     section_instructions = self.disassemble(
-                        arch,
+                        info["architecture"],
                         code_bytes,
                         section.va,
                         info["endianness"],
